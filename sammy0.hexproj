@@ -1,0 +1,1 @@
+{"dataProcessor":"{\"links\":{},\"nodes\":{}}","filePath":"SAMMY0.RES","patches":[],"pattern":"u16 signature @ 0x0;\nu32 footerAddress @ 0x02;\n"}
