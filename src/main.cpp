@@ -1,6 +1,8 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <vector>
+#include <string>
 
 #define RES_MAGIC_NUMBER 0x921A
 
@@ -24,7 +26,7 @@ struct FileInfo
     uint16_t    unk1;
     uint16_t    unk2;
 
-    void*       data;
+    void*       data = nullptr;
 } __attribute__((packed));
 
 HeaderInfo *readHeader(std::ifstream &ifs)
@@ -32,9 +34,9 @@ HeaderInfo *readHeader(std::ifstream &ifs)
     HeaderInfo *header = new HeaderInfo;
 
     ifs.read(reinterpret_cast<char*>(header), sizeof(HeaderInfo));
-    std::cout   << "Signature: " << std::showbase << std::setw(4) << std::hex
-                << header->signature << std::endl
-                << "Footer addr: " << std::hex << header->footerAddr << std::endl;
+    std::cout << std::showbase << std::setw(4) << std::hex;
+    std::cout   << "Signature: " << header->signature << std::endl
+                << "Footer addr: " << header->footerAddr << std::endl;
 
     if (header->signature != RES_MAGIC_NUMBER)
     {
@@ -42,20 +44,32 @@ HeaderInfo *readHeader(std::ifstream &ifs)
         return nullptr;
     }
 
-    std::cout << "Magic number is valid!" << std::endl;
+    std::cout << "Magic number is valid!\n\n";
     return header;
 }
 
-FileInfo *readFileInfo(std::ifstream &ifs)
+void readFileInfo(std::ifstream &ifs, FileInfo &fileInfo)
 {
-    FileInfo *fileInfo = new FileInfo;
+    fileInfo.data = calloc(1, fileInfo.size);
+    ifs.read(reinterpret_cast<char*>(&fileInfo), sizeof(FileInfo) - sizeof(void *));
+    std::cout   << "ext:        \"" << fileInfo.ext << '"' << std::endl
+                << "dataAddr:   " << fileInfo.dataAddr << std::endl
+                << "size:       " << fileInfo.size << " bytes\n\n";
 
-    ifs.read(reinterpret_cast<char*>(fileInfo), sizeof(FileInfo));
-    std::cout   << "ext: " << fileInfo->ext << std::endl
-                << "dataAddr: " << fileInfo->dataAddr << std::endl
-                << "size: " << fileInfo->size << " bytes" << std::endl;
+    std::streampos pos = ifs.tellg();
+    ifs.seekg(fileInfo.dataAddr);
+    // TODO: check for failure
 
-    return fileInfo;
+    ifs.read(reinterpret_cast<char *>(fileInfo.data), fileInfo.size);
+
+    if (pos == -1)
+    {
+        ifs.seekg(0, std::ios::end);
+    }
+    else
+    {
+        ifs.seekg(pos);
+    }
 }
 
 int main(int argc, char const *argv[])
@@ -66,7 +80,7 @@ int main(int argc, char const *argv[])
         return 1;
     }
 
-    std::ifstream ifs(argv[1], std::ios_base::binary);
+    std::ifstream ifs(argv[1], std::ios::binary);
 
     if (!ifs.is_open() || !ifs.good())
     {
@@ -82,12 +96,27 @@ int main(int argc, char const *argv[])
         return 1;
     }
 
-    ifs.seekg(header->footerAddr);
 
-    FileInfo *fileInfo = readFileInfo(ifs);
-    if (fileInfo == nullptr)
+    ifs.seekg(header->footerAddr);
+    std::vector<FileInfo> files;
+    while (!ifs.eof() && ifs.peek() != EOF) {
+        FileInfo file;
+        readFileInfo(ifs, file);
+        files.push_back(file);
+    }
+
+    std::cout << std::endl << "Found " << std::dec << files.size() << " files" << std::endl;
+
+    int i = 0;
+    for (FileInfo &file : files)
     {
-        return 1;
+        ++i;
+        if (file.data != nullptr)
+        {
+            std::ofstream outFile(std::to_string(i) + '.' + std::string(file.ext));
+            outFile.write(reinterpret_cast<const char *>(file.data), file.size);
+            free(file.data);
+        }
     }
 
     ifs.close();
