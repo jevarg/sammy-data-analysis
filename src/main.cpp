@@ -15,7 +15,7 @@ struct HeaderInfo
 struct FileInfo
 {
     char        ext[4];
-    
+
     uint8_t     c0; // probably enum
     uint8_t     c1; // probably enum
 
@@ -50,11 +50,12 @@ HeaderInfo *readHeader(std::ifstream &ifs)
 
 void readFileInfo(std::ifstream &ifs, FileInfo &fileInfo)
 {
-    fileInfo.data = calloc(1, fileInfo.size);
     ifs.read(reinterpret_cast<char*>(&fileInfo), sizeof(FileInfo) - sizeof(void *));
     std::cout   << "ext:        \"" << fileInfo.ext << '"' << std::endl
                 << "dataAddr:   " << fileInfo.dataAddr << std::endl
                 << "size:       " << fileInfo.size << " bytes\n\n";
+
+    fileInfo.data = malloc(fileInfo.size);
 
     std::streampos pos = ifs.tellg();
     ifs.seekg(fileInfo.dataAddr);
@@ -108,14 +109,15 @@ int main(int argc, char const *argv[])
     std::cout << std::endl << "Found " << std::dec << files.size() << " files" << std::endl;
 
     int i = 0;
-    for (FileInfo &file : files)
+    for (auto it = files.begin(); it != files.end(); ++it)
     {
         ++i;
-        if (file.data != nullptr)
+        if (it->data != nullptr)
         {
-            std::ofstream outFile(std::to_string(i) + '.' + std::string(file.ext));
-            outFile.write(reinterpret_cast<const char *>(file.data), file.size);
-            free(file.data);
+            std::ofstream outFile(std::to_string(i) + '.' + std::string(it->ext), std::ios::binary);
+            outFile.write(static_cast<char *>(it->data), it->size);
+            outFile.close();
+            free(it->data);
         }
     }
 
