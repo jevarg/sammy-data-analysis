@@ -52,8 +52,8 @@ void readFileInfo(std::ifstream &ifs, FileInfo &fileInfo)
 {
     ifs.read(reinterpret_cast<char*>(&fileInfo), sizeof(FileInfo) - sizeof(void *));
     std::cout   << "ext:        \"" << fileInfo.ext << '"' << std::endl
-                << "dataAddr:   " << fileInfo.dataAddr << std::endl
-                << "size:       " << fileInfo.size << " bytes\n\n";
+                << "dataAddr:   " << std::hex << fileInfo.dataAddr << std::endl
+                << "size:       " << std::dec << fileInfo.size << " bytes\n\n";
 
     fileInfo.data = malloc(fileInfo.size);
 
@@ -62,6 +62,11 @@ void readFileInfo(std::ifstream &ifs, FileInfo &fileInfo)
     // TODO: check for failure
 
     ifs.read(reinterpret_cast<char *>(fileInfo.data), fileInfo.size);
+
+    for (size_t i = 0; i < fileInfo.size; ++i)
+    {
+    }
+
 
     if (pos == -1)
     {
@@ -100,15 +105,17 @@ int main(int argc, char const *argv[])
 
     ifs.seekg(header->footerAddr);
     std::vector<FileInfo> files;
+    int i = 0;
     while (!ifs.eof() && ifs.peek() != EOF) {
         FileInfo file;
+        std::cout << "File #" << std::dec << ++i << '\n';
         readFileInfo(ifs, file);
         files.push_back(file);
     }
 
     std::cout << std::endl << "Found " << std::dec << files.size() << " files" << std::endl;
 
-    int i = 0;
+    i = 0;
     for (auto it = files.begin(); it != files.end(); ++it)
     {
         ++i;
