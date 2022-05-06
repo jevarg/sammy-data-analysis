@@ -30,3 +30,12 @@
 *.exe
 *.out
 *.app
+
+*.SND
+*.PAL
+*.SPR
+*.CLU
+*.ANI
+
+*.dSYM
+.DS_Store
