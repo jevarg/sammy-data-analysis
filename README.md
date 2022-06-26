@@ -19,4 +19,4 @@ g++ ../src/main.cpp -o extract
 ```
 
 Extract
-[![asciicast](https://asciinema.org/a/tzbdIoVoVxeavEQh6piSq8kbY.svg)](https://asciinema.org/a/tzbdIoVoVxeavEQh6piSq8kbY)
+![Extract](.readme/extract.svg)
